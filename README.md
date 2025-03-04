@@ -59,6 +59,14 @@ Lists commit messages between the last Git tag and HEAD.
   - `max_count` (optional): Maximum number of commits to return
 - Returns: List of dictionaries with `hash`, `author`, `date`, and `message`
 
+#### create_git_tag
+Creates a new git tag in the specified repository.
+- Parameters: 
+  - `repo_name`: Name of the git repository
+  - `tag_name`: Name of the tag to create
+  - `message` (optional): Message for annotated tag (if not provided, creates a lightweight tag)
+- Returns: Dictionary with `status`, `version` (tag name), `date` (tag creation date), and `type` (annotated or lightweight)
+
 ### Troubleshooting
 - **Repository Not Found**: Ensure `GIT_REPOS_PATH` is set correctly and the repository exists
 - **No Tags Found**: The repository doesn't have any tags yet

@@ -169,3 +169,57 @@ def list_repositories(ctx: Context) -> List[str]:
             repos.append(item)
     
     return repos
+
+
+@mcp.tool()
+def create_git_tag(ctx: Context, repo_name: str, tag_name: str, message: Optional[str] = None) -> Dict[str, str]:
+    """Create a new git tag in the repository
+
+    Args:
+        repo_name: Name of the git repository
+        tag_name: Name of the tag to create
+        message: Optional message for annotated tag
+
+    Returns:
+        Dictionary containing status and tag information
+    """
+    git_repos_path = ctx.request_context.lifespan_context.git_repos_path
+    repo_path = os.path.join(git_repos_path, repo_name)
+    
+    # Validate repository exists
+    if not os.path.exists(repo_path) or not os.path.exists(os.path.join(repo_path, '.git')):
+        raise ValueError(f'Repository not found: {repo_name}')
+    
+    # Create the tag command
+    if message:
+        # Create annotated tag with message
+        tag_command = ['tag', '-a', tag_name, '-m', message]
+    else:
+        # Create lightweight tag
+        tag_command = ['tag', tag_name]
+    
+    # Execute the tag command
+    try:
+        _run_git_command(repo_path, tag_command)
+        
+        # Get tag date
+        tag_date_str = _run_git_command(
+            repo_path, 
+            ['log', '-1', '--format=%ai', tag_name]
+        )
+        
+        # Parse the date string into a datetime object
+        tag_date = datetime.strptime(tag_date_str, '%Y-%m-%d %H:%M:%S %z')
+        formatted_date = tag_date.strftime('%Y-%m-%d %H:%M:%S')
+        
+        return {
+            'status': 'success',
+            'version': tag_name,
+            'date': formatted_date,
+            'type': 'annotated' if message else 'lightweight'
+        }
+    except ValueError as e:
+        return {
+            'status': 'error',
+            'error': str(e)
+        }
