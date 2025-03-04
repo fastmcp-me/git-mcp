@@ -67,6 +67,19 @@ Creates a new git tag in the specified repository.
   - `message` (optional): Message for annotated tag (if not provided, creates a lightweight tag)
 - Returns: Dictionary with `status`, `version` (tag name), `date` (tag creation date), and `type` (annotated or lightweight)
 
+#### push_git_tag
+Pushes an existing git tag to the default remote repository.
+- Parameters: 
+  - `repo_name`: Name of the git repository
+  - `tag_name`: Name of the tag to push
+- Returns: Dictionary with `status`, `remote` (name of the remote), `tag` (name of the tag), and `message` (success message)
+
+#### checkout_and_pull_main
+Checkouts the main branch (or master as fallback) and pulls from all remotes.
+- Parameters:
+  - `repo_name`: Name of the git repository
+- Returns: Dictionary with `status`, `repository`, `branch`, and `pull_results` (results for each remote)
+
 ### Troubleshooting
 - **Repository Not Found**: Ensure `GIT_REPOS_PATH` is set correctly and the repository exists
 - **No Tags Found**: The repository doesn't have any tags yet

@@ -223,3 +223,125 @@ def create_git_tag(ctx: Context, repo_name: str, tag_name: str, message: Optiona
             'status': 'error',
             'error': str(e)
         }
+
+
+@mcp.tool()
+def push_git_tag(ctx: Context, repo_name: str, tag_name: str) -> Dict[str, str]:
+    """Push a git tag to the default remote
+
+    Args:
+        repo_name: Name of the git repository
+        tag_name: Name of the tag to push
+
+    Returns:
+        Dictionary containing status and information about the operation
+    """
+    git_repos_path = ctx.request_context.lifespan_context.git_repos_path
+    repo_path = os.path.join(git_repos_path, repo_name)
+    
+    # Validate repository exists
+    if not os.path.exists(repo_path) or not os.path.exists(os.path.join(repo_path, '.git')):
+        raise ValueError(f'Repository not found: {repo_name}')
+    
+    # Validate tag exists
+    try:
+        _run_git_command(repo_path, ['tag', '-l', tag_name])
+    except ValueError:
+        return {
+            'status': 'error',
+            'error': f'Tag {tag_name} not found in repository {repo_name}'
+        }
+    
+    # Get the default remote (usually 'origin')
+    try:
+        remote = _run_git_command(repo_path, ['remote'])
+        if not remote:
+            return {
+                'status': 'error',
+                'error': f'No remote configured for repository {repo_name}'
+            }
+        # Use the first remote if multiple are available
+        default_remote = remote.split('\n')[0].strip()
+        
+        # Push the tag to the remote
+        push_result = _run_git_command(repo_path, ['push', default_remote, tag_name])
+        
+        return {
+            'status': 'success',
+            'remote': default_remote,
+            'tag': tag_name,
+            'message': f'Successfully pushed tag {tag_name} to remote {default_remote}'
+        }
+    except ValueError as e:
+        return {
+            'status': 'error',
+            'error': str(e)
+        }
+
+
+@mcp.tool()
+async def checkout_and_pull_main(ctx: Context, repo_name: str) -> Dict:
+    '''Checkout main branch and pull all remotes
+    
+    Args:
+        repo_name: Name of the git repository
+    
+    Returns:
+        Dictionary containing status and information about the operation
+    '''
+    git_ctx = ctx.get_context(GitContext)
+    repo_path = os.path.join(git_ctx.git_repos_path, repo_name)
+    
+    # Validate repository exists
+    if not os.path.exists(repo_path) or not os.path.exists(os.path.join(repo_path, '.git')):
+        raise ValueError(f'Repository not found: {repo_name}')
+    
+    try:
+        # Get all remotes
+        remotes = _run_git_command(repo_path, ['remote']).strip().split('\n')
+        if not remotes or remotes[0] == '':
+            return {
+                'status': 'error',
+                'error': f'No remotes configured for repository {repo_name}'
+            }
+        
+        # Checkout main branch
+        try:
+            _run_git_command(repo_path, ['checkout', 'main'])
+        except ValueError as e:
+            # Try master if main doesn't exist
+            try:
+                _run_git_command(repo_path, ['checkout', 'master'])
+            except ValueError:
+                return {
+                    'status': 'error',
+                    'error': f'Failed to checkout main or master branch: {str(e)}'
+                }
+        
+        # Pull from all remotes
+        pull_results = {}
+        for remote in remotes:
+            if remote:  # Skip empty remote names
+                try:
+                    result = _run_git_command(repo_path, ['pull', remote, 'main'])
+                    pull_results[remote] = 'success'
+                except ValueError as e:
+                    # Try master if main doesn't exist
+                    try:
+                        result = _run_git_command(repo_path, ['pull', remote, 'master'])
+                        pull_results[remote] = 'success'
+                    except ValueError as e:
+                        pull_results[remote] = f'error: {str(e)}'
+        
+        return {
+            'status': 'success',
+            'repository': repo_name,
+            'branch': 'main',
+            'pull_results': pull_results
+        }
+    
+    except Exception as e:
+        return {
+            'status': 'error',
+            'error': f'Failed to checkout and pull: {str(e)}'
+        }
