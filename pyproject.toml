@@ -1,6 +1,6 @@
 [project]
 name = 'git-mcp'
-version = '0.3.0'
+version = '0.3.2'
 description = 'MCP server for managing Git operations'
 authors = [
     {name = 'Kristof Jozsa'}

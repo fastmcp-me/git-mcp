@@ -74,8 +74,8 @@ Pushes an existing git tag to the default remote repository.
   - `tag_name`: Name of the tag to push
 - Returns: Dictionary with `status`, `remote` (name of the remote), `tag` (name of the tag), and `message` (success message)
 
-#### checkout_and_pull_main
-Checkouts the main branch (or master as fallback) and pulls from all remotes.
+#### refresh_repository
+Refreshes a repository by checking out the main branch (or master as fallback) and pulling from all remotes.
 - Parameters:
   - `repo_name`: Name of the git repository
 - Returns: Dictionary with `status`, `repository`, `branch`, and `pull_results` (results for each remote)
